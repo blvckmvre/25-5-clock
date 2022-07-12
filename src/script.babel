@@ -1,0 +1,159 @@
+const sound = "https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"
+
+const App = () => {
+  const [time,setTime] = React.useState(1500);
+  const [session,setSession] = React.useState(25);
+  const [breaks,setBreaks] = React.useState(5);
+  const [isBreak, setIsBreak] = React.useState(false);
+  const [isDisabled, setDisabled] = React.useState(false);
+  const timer = React.useRef(null);
+  const audio = React.useRef(null);
+  
+  React.useEffect(()=>{
+    if(!isBreak)
+      setTime(session*60);
+  },[isBreak, session])
+  
+  React.useEffect(()=>{
+    if(isBreak)
+      setTime(breaks*60);
+  },[isBreak, breaks])
+  
+  React.useEffect(()=>{
+    if(time===0){
+      if(!isBreak){
+        setTime(breaks*60);
+        setIsBreak(true);
+      } else {
+        setTime(session*60);
+        setIsBreak(false);
+      }
+      audio.current.currentTime=0;
+      audio.current.play();
+   }
+  },[time, isBreak])
+  
+  const countDown = () => {
+    if(!timer.current){
+      setDisabled(true);
+      timer.current = setInterval(()=>{
+         setTime(p=>p-1);
+      },1000);
+    } 
+    else 
+    {
+      clearInterval(timer.current);
+      timer.current = null;
+      setDisabled(false);
+    }
+  }
+  
+  const formatTime = React.useCallback(() => {
+    let mins = Math.floor(time/60),
+        secs = time - 60*mins;
+    if(mins<10) mins = '0'+mins;
+    if(secs<10) secs = '0'+secs;
+    return `${mins}:${secs}`;
+  },[time]);
+  
+  const reset = () => {
+    if(timer.current){
+      clearInterval(timer.current);
+      timer.current = null;
+    }
+    if(isBreak)
+      setIsBreak(false);
+    if(isDisabled)
+      setDisabled(false);
+    setSession(25);
+    setBreaks(5);
+    setTime(1500);
+  }
+  
+  return (
+    <div id="app-wrapper">
+      <audio id="beep" ref={audio} src={sound} />
+      <div id="label-wrapper">
+        <h1 id="timer-label">
+          {isBreak ? "Break" : "Session"}
+        </h1>
+        <div className="btns-wrapper">
+          <button id="start_stop" 
+            onClick={countDown}
+          >
+            <i className=
+              {
+              `fa-solid fa-${isDisabled ? "stop" : "play"}`
+              }
+            ></i>
+          </button>
+          <button id="reset"
+            onClick={reset}
+          >
+            <i className="fa-solid fa-rotate"></i>
+          </button>
+        </div>
+      </div>
+      <MainDisplay time={formatTime()} />
+      <ConfigBar 
+        id="session"
+        data={session} 
+        cb={setSession} 
+        isDisabled={isDisabled} 
+      />
+      <ConfigBar 
+        id="break"
+        data={breaks} 
+        cb={setBreaks} 
+        isDisabled={isDisabled} 
+      />
+    </div>
+  )
+}
+
+const MainDisplay = ({time}) => {
+  return (
+    <div id="display">
+      <h1 id="time-left">{time}</h1>
+    </div>
+  )
+}
+
+const ConfigBar = ({id, data, cb, isDisabled}) => {
+  const inc = () => {
+    if(data<60)
+      cb(p=>p+1)
+  }
+  const dec = () => {
+    if(data>1)
+      cb(p=>p-1)
+  }
+  return (
+    <div className="config">
+      <h3 id={id+"-label"}>
+        {(id+" length").toUpperCase()}
+      </h3>
+      <h2 id={id+"-length"}>{data}</h2>
+      <div className="btns-wrapper">
+        <button 
+          id={id+"-decrement"} 
+          disabled={isDisabled} 
+          onClick={dec}
+        >
+          <i className="fa-solid fa-backward-step"></i>
+        </button>
+        <button 
+          id={id+"-increment"} 
+          disabled={isDisabled} 
+          onClick={inc}
+        >
+          <i className="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+
